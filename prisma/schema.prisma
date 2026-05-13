@@ -1,0 +1,300 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  CUSTOMER
+  ADMIN
+  DELIVERY
+}
+
+enum ProductStatus {
+  AVAILABLE
+  OUT_OF_STOCK
+  DISCOUNTED
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SHIPPED
+  ON_THE_WAY
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  ASSIGNED
+  ON_THE_WAY
+  DELIVERED
+  INCIDENT_REPORTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum InventoryMovementType {
+  INCREASE
+  DECREASE
+  ADJUSTMENT
+  SALE
+  RETURN
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  name      RoleName @unique
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  fullName     String
+  email        String      @unique
+  phone        String
+  age          Int?
+  address      String?
+  passwordHash String
+  isActive     Boolean     @default(true)
+  roleId       String
+  role         Role        @relation(fields: [roleId], references: [id])
+  cart         Cart?
+  orders       Order[]
+  deliveries   Delivery[]  @relation("DeliveryCourier")
+  auditLogs    AuditLog[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([email])
+  @@index([roleId])
+  @@map("users")
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Product {
+  id                 String              @id @default(cuid())
+  name               String
+  slug               String              @unique
+  description        String
+  imageUrl           String
+  price              Decimal             @db.Decimal(10, 2)
+  stock              Int                 @default(0)
+  minStock           Int                 @default(5)
+  status             ProductStatus       @default(AVAILABLE)
+  isActive           Boolean             @default(true)
+  categoryId         String
+  category           Category            @relation(fields: [categoryId], references: [id])
+  discounts          Discount[]
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  inventoryMovements InventoryMovement[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([status])
+  @@map("products")
+}
+
+model Discount {
+  id          String    @id @default(cuid())
+  name        String
+  percentage  Decimal?  @db.Decimal(5, 2)
+  amount      Decimal?  @db.Decimal(10, 2)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  isActive    Boolean   @default(true)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([productId])
+  @@index([isActive])
+  @@map("discounts")
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id                 String            @id @default(cuid())
+  userId             String
+  user               User              @relation(fields: [userId], references: [id])
+  status             OrderStatus       @default(PENDING)
+  subtotal           Decimal           @db.Decimal(10, 2)
+  discountTotal      Decimal           @default(0) @db.Decimal(10, 2)
+  total              Decimal           @db.Decimal(10, 2)
+  deliveryAddress    String
+  customerPhone      String
+  items              OrderItem[]
+  delivery           Delivery?
+  verificationCode   VerificationCode?
+  payment            Payment?
+  saleHistory        SaleHistory?
+  inventoryMovements InventoryMovement[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  productName String
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  quantity    Int
+  total       Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model Delivery {
+  id            String         @id @default(cuid())
+  orderId       String         @unique
+  order         Order          @relation(fields: [orderId], references: [id])
+  courierId     String?
+  courier       User?          @relation("DeliveryCourier", fields: [courierId], references: [id])
+  status        DeliveryStatus @default(ASSIGNED)
+  incidentNote  String?
+  assignedAt    DateTime       @default(now())
+  deliveredAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([courierId])
+  @@index([status])
+  @@map("deliveries")
+}
+
+model VerificationCode {
+  id        String    @id @default(cuid())
+  orderId   String    @unique
+  order     Order     @relation(fields: [orderId], references: [id])
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([expiresAt])
+  @@map("verification_codes")
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  order     Order         @relation(fields: [orderId], references: [id])
+  amount    Decimal       @db.Decimal(10, 2)
+  status    PaymentStatus @default(PENDING)
+  provider  String?
+  reference String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+  @@map("payments")
+}
+
+model InventoryMovement {
+  id        String                @id @default(cuid())
+  productId String
+  product   Product               @relation(fields: [productId], references: [id])
+  orderId   String?
+  order     Order?                @relation(fields: [orderId], references: [id])
+  type      InventoryMovementType
+  quantity  Int
+  reason    String
+  createdAt DateTime              @default(now())
+
+  @@index([productId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("inventory_movements")
+}
+
+model SaleHistory {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  amount    Decimal  @db.Decimal(10, 2)
+  soldAt    DateTime @default(now())
+
+  @@index([soldAt])
+  @@map("sales_history")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

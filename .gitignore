@@ -1,0 +1,9 @@
+.env
+.env*.local
+.next
+.vercel
+node_modules
+dist
+coverage
+*.log
+prisma/migrations/*/migration_lock.toml

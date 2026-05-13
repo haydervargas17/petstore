@@ -1,0 +1,191 @@
+"use client";
+
+import { CheckCircle2, PackageCheck, XCircle } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { StatusPill } from "@/shared/components/StatusPill";
+import { formatCurrency } from "@/shared/lib/money";
+import type { ApiEnvelope } from "@/shared/types/domain";
+
+type Dashboard = {
+  totals: {
+    revenue: number;
+    totalOrders: number;
+    pendingOrders: number;
+    deliveredOrders: number;
+    cancelledOrders: number;
+  };
+  lowStockProducts: { id: string; name: string; stock: number; minStock: number }[];
+  topProducts: { productId: string; productName: string; quantity: number; total: number }[];
+  salesByDay: { day: string; total: number; orders: number }[];
+};
+
+type Order = {
+  id: string;
+  status: string;
+  total: number;
+  customer: { fullName: string; phone: string };
+  items: { id: string; productName: string; quantity: number }[];
+  createdAt: string;
+};
+
+export function AdminDashboard() {
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function load() {
+    Promise.all([fetch("/api/admin/dashboard"), fetch("/api/orders")])
+      .then(async ([dashboardResponse, ordersResponse]) => {
+        const dashboardPayload = await dashboardResponse.json();
+        const ordersPayload = await ordersResponse.json();
+
+        if (!dashboardResponse.ok || !ordersResponse.ok) {
+          setError(dashboardPayload.error ?? ordersPayload.error);
+          return;
+        }
+
+        setDashboard(
+          (dashboardPayload as ApiEnvelope<{ dashboard: Dashboard }>).data.dashboard
+        );
+        setOrders((ordersPayload as ApiEnvelope<{ orders: Order[] }>).data.orders);
+      })
+      .catch(() => setError("No se pudo cargar el panel"));
+  }
+
+  useEffect(load, []);
+
+  function changeStatus(orderId: string, status: string) {
+    startTransition(async () => {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+
+      if (!response.ok) {
+        const payload = await response.json();
+        setError(payload.error);
+        return;
+      }
+
+      load();
+    });
+  }
+
+  if (error) {
+    return <EmptyState title="Panel administrativo no disponible">{error}</EmptyState>;
+  }
+
+  if (!dashboard) {
+    return <EmptyState title="Cargando dashboard" />;
+  }
+
+  const cards = [
+    ["Ingresos", formatCurrency(dashboard.totals.revenue)],
+    ["Pedidos", dashboard.totals.totalOrders.toString()],
+    ["Pendientes", dashboard.totals.pendingOrders.toString()],
+    ["Entregados", dashboard.totals.deliveredOrders.toString()]
+  ];
+
+  return (
+    <section className="dashboard-layout">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Administrador general</p>
+          <h1>Operación de la tienda</h1>
+        </div>
+      </div>
+
+      <div className="stat-grid">
+        {cards.map(([label, value]) => (
+          <div className="stat-card" key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+
+      <div className="dashboard-grid">
+        <section className="analytics-panel">
+          <h2>Ventas por día</h2>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={dashboard.salesByDay}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              <Bar dataKey="total" fill="#1f8a70" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </section>
+
+        <section className="analytics-panel">
+          <h2>Bajo stock</h2>
+          <div className="compact-list">
+            {dashboard.lowStockProducts.map((product) => (
+              <div key={product.id}>
+                <span>{product.name}</span>
+                <strong>{product.stock}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <section className="analytics-panel">
+        <h2>Pedidos recientes</h2>
+        <div className="order-list">
+          {orders.slice(0, 8).map((order) => (
+            <article className="order-card" key={order.id}>
+              <div>
+                <div className="product-card-top">
+                  <span>{order.customer.fullName}</span>
+                  <StatusPill status={order.status} />
+                </div>
+                <h3>Pedido #{order.id.slice(-6)}</h3>
+                <p>{formatCurrency(order.total)}</p>
+              </div>
+              <div className="action-cluster">
+                <button
+                  type="button"
+                  aria-label="Aprobar"
+                  disabled={isPending}
+                  onClick={() => changeStatus(order.id, "APPROVED")}
+                >
+                  <CheckCircle2 size={17} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Enviar"
+                  disabled={isPending}
+                  onClick={() => changeStatus(order.id, "SHIPPED")}
+                >
+                  <PackageCheck size={17} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Cancelar"
+                  disabled={isPending}
+                  onClick={() => changeStatus(order.id, "CANCELLED")}
+                >
+                  <XCircle size={17} />
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
