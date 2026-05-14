@@ -38,20 +38,36 @@ type Order = {
   createdAt: string;
 };
 
+type Courier = {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+};
+
 export function AdminDashboard() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [couriers, setCouriers] = useState<Courier[]>([]);
+  const [courierByOrder, setCourierByOrder] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function load() {
-    Promise.all([fetch("/api/admin/dashboard"), fetch("/api/orders")])
-      .then(async ([dashboardResponse, ordersResponse]) => {
+    Promise.all([
+      fetch("/api/admin/dashboard"),
+      fetch("/api/orders"),
+      fetch("/api/admin/couriers")
+    ])
+      .then(async ([dashboardResponse, ordersResponse, couriersResponse]) => {
         const dashboardPayload = await dashboardResponse.json();
         const ordersPayload = await ordersResponse.json();
+        const couriersPayload = await couriersResponse.json();
 
-        if (!dashboardResponse.ok || !ordersResponse.ok) {
-          setError(dashboardPayload.error ?? ordersPayload.error);
+        if (!dashboardResponse.ok || !ordersResponse.ok || !couriersResponse.ok) {
+          setError(
+            dashboardPayload.error ?? ordersPayload.error ?? couriersPayload.error
+          );
           return;
         }
 
@@ -59,6 +75,9 @@ export function AdminDashboard() {
           (dashboardPayload as ApiEnvelope<{ dashboard: Dashboard }>).data.dashboard
         );
         setOrders((ordersPayload as ApiEnvelope<{ orders: Order[] }>).data.orders);
+        setCouriers(
+          (couriersPayload as ApiEnvelope<{ couriers: Courier[] }>).data.couriers
+        );
       })
       .catch(() => setError("No se pudo cargar el panel"));
   }
@@ -70,7 +89,13 @@ export function AdminDashboard() {
       const response = await fetch(`/api/orders/${orderId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({
+          status,
+          courierId:
+            status === "SHIPPED"
+              ? courierByOrder[orderId] || couriers[0]?.id
+              : undefined
+        })
       });
 
       if (!response.ok) {
@@ -157,6 +182,22 @@ export function AdminDashboard() {
                 <p>{formatCurrency(order.total)}</p>
               </div>
               <div className="action-cluster">
+                <select
+                  aria-label="Repartidor"
+                  value={courierByOrder[order.id] ?? couriers[0]?.id ?? ""}
+                  onChange={(event) =>
+                    setCourierByOrder((current) => ({
+                      ...current,
+                      [order.id]: event.target.value
+                    }))
+                  }
+                >
+                  {couriers.map((courier) => (
+                    <option key={courier.id} value={courier.id}>
+                      {courier.fullName}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   aria-label="Aprobar"

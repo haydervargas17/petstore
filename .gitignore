@@ -6,4 +6,7 @@ node_modules
 dist
 coverage
 *.log
+*.tsbuildinfo
 prisma/migrations/*/migration_lock.toml
+
+.vercel

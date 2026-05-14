@@ -611,6 +611,15 @@ img {
   gap: 8px;
 }
 
+.action-cluster select {
+  min-height: 34px;
+  max-width: 170px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
 .action-cluster button:first-child {
   background: #e7f6ef;
   color: var(--accent-strong);

@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { HttpError } from "@/shared/lib/api";
 import { prisma } from "@/shared/lib/prisma";
 import { mapProduct } from "@/modules/products/products.service";
@@ -18,9 +19,13 @@ const cartInclude = {
     },
     orderBy: { createdAt: "asc" }
   }
-};
+} satisfies Prisma.CartInclude;
 
-function mapCart(cart: Awaited<ReturnType<typeof getOrCreateCart>>) {
+type CartWithItems = Prisma.CartGetPayload<{
+  include: typeof cartInclude;
+}>;
+
+function mapCart(cart: CartWithItems) {
   const items = cart.items.map((item) => {
     const product = mapProduct(item.product);
     return {
