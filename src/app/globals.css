@@ -77,6 +77,7 @@ img {
 .brand-mark,
 .nav-link,
 .topbar-actions,
+.session-link,
 .primary-link,
 .icon-link,
 .primary-button,
@@ -133,6 +134,38 @@ img {
 .topbar-actions {
   justify-content: flex-end;
   gap: 8px;
+}
+
+.session-link {
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.primary-session-link {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.secondary-session-link:hover,
+.icon-link:hover,
+.secondary-button:hover {
+  border-color: #c9d8e6;
+  background: #eef4fb;
+  color: var(--blue);
+}
+
+.primary-session-link:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
 }
 
 .user-chip {
@@ -547,7 +580,7 @@ img {
 
 .quantity-control button,
 .icon-danger,
-.action-cluster button {
+.action-cluster button:not(.status-action) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -560,7 +593,7 @@ img {
 }
 
 .icon-danger,
-.action-cluster button:last-child {
+.action-cluster button:not(.status-action):last-child {
   background: #fff0ee;
   color: var(--coral);
 }
@@ -675,6 +708,17 @@ img {
   margin: 0;
 }
 
+.compact-heading {
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
+.panel-divider {
+  height: 1px;
+  margin: 16px 0;
+  background: var(--line);
+}
+
 .success-chip {
   display: inline-flex;
   align-items: center;
@@ -685,6 +729,52 @@ img {
   color: var(--accent-strong);
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.admin-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-workspace-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-workspace-nav button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 5px 10px;
+  min-height: 78px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  box-shadow: 0 10px 26px rgba(23, 33, 43, 0.05);
+}
+
+.admin-workspace-nav button:hover,
+.admin-workspace-nav button.is-active {
+  border-color: #b9d8cf;
+  background: #f1fbf6;
+}
+
+.admin-workspace-nav button svg {
+  grid-row: span 2;
+  color: var(--accent);
+}
+
+.admin-workspace-nav span {
+  font-weight: 900;
+}
+
+.admin-workspace-nav small {
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .product-manager {
@@ -755,6 +845,7 @@ img {
 .action-cluster {
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .action-cluster select {
@@ -779,9 +870,33 @@ img {
   font-weight: 800;
 }
 
-.action-cluster button:first-child {
+.status-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: auto;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  font-weight: 800;
+}
+
+.approve-action {
   background: #e7f6ef;
   color: var(--accent-strong);
+}
+
+.send-action {
+  background: #eef4fb;
+  color: var(--blue);
+}
+
+.cancel-action {
+  background: #fff0ee;
+  color: var(--coral);
 }
 
 .delivery-card {
@@ -806,16 +921,22 @@ img {
   font-weight: 800;
 }
 
-.delivery-actions button:first-of-type {
+.delivery-actions .delivery-start-button {
   border-color: #d8e6f8;
   background: #eef4fb;
   color: var(--blue);
 }
 
-.delivery-actions button:nth-of-type(2) {
+.delivery-actions .delivery-complete-button {
   border-color: #cfe8de;
   background: #e7f6ef;
   color: var(--accent-strong);
+}
+
+.delivery-actions .delivery-incident-button {
+  border-color: #f3d4cf;
+  background: #fff0ee;
+  color: var(--coral);
 }
 
 .completed-deliveries {
@@ -842,7 +963,8 @@ img {
   .auth-layout,
   .dashboard-grid,
   .delivery-card,
-  .product-form {
+  .product-form,
+  .admin-workspace-nav {
     grid-template-columns: 1fr;
   }
 
@@ -873,8 +995,14 @@ img {
   }
 
   .nav-link span,
-  .primary-link span {
+  .primary-link span,
+  .session-link span {
     display: none;
+  }
+
+  .session-link {
+    width: 38px;
+    padding: 0;
   }
 
   .filters-bar,

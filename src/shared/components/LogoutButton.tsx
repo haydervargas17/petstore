@@ -15,7 +15,7 @@ export function LogoutButton() {
 
   return (
     <button
-      className="icon-link logout-button"
+      className="session-link secondary-session-link logout-button"
       type="button"
       aria-label="Cerrar sesion"
       title="Cerrar sesion"
@@ -23,6 +23,7 @@ export function LogoutButton() {
       onClick={signOut}
     >
       <LogOut size={18} />
+      <span>{isPending ? "Saliendo..." : "Cerrar sesion"}</span>
     </button>
   );
 }

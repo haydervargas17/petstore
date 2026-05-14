@@ -85,12 +85,17 @@ export async function AppShell({ children, active = "catalog" }: AppShellProps) 
             </>
           ) : (
             <>
-              <Link className="icon-link" href="/login" aria-label="Iniciar sesion">
+              <Link
+                className="session-link secondary-session-link"
+                href="/login"
+                aria-label="Iniciar sesion"
+              >
                 <LogIn size={18} />
+                <span>Iniciar sesion</span>
               </Link>
-              <Link className="primary-link" href="/registro">
+              <Link className="session-link primary-session-link" href="/registro">
                 <UserPlus size={17} />
-                <span>Registro</span>
+                <span>Crear cuenta</span>
               </Link>
             </>
           )}

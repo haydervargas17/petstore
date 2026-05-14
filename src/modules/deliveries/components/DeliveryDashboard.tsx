@@ -136,14 +136,17 @@ export function DeliveryDashboard() {
               </div>
 
               <div className="delivery-actions">
-                <button
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => updateDelivery(delivery.id, "start")}
-                >
-                  <Navigation size={17} />
-                  <span>En camino</span>
-                </button>
+                {delivery.status === "ASSIGNED" ? (
+                  <button
+                    className="delivery-start-button"
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => updateDelivery(delivery.id, "start")}
+                  >
+                    <Navigation size={17} />
+                    <span>Marcar en camino</span>
+                  </button>
+                ) : null}
                 <label>
                   Codigo del cliente
                   <input
@@ -161,6 +164,7 @@ export function DeliveryDashboard() {
                   <span>Solo se completa si coincide con el codigo del pedido.</span>
                 </label>
                 <button
+                  className="delivery-complete-button"
                   type="button"
                   disabled={isPending}
                   onClick={() => verify(delivery.id)}
@@ -169,6 +173,7 @@ export function DeliveryDashboard() {
                   <span>Completar entrega</span>
                 </button>
                 <button
+                  className="delivery-incident-button"
                   type="button"
                   disabled={isPending}
                   onClick={() => updateDelivery(delivery.id, "incident")}
