@@ -12,6 +12,7 @@ type Order = {
   status: string;
   total: number;
   deliveryAddress: string;
+  deliveryCode: string | null;
   items: { id: string; productName: string; quantity: number }[];
   createdAt: string;
 };
@@ -74,6 +75,12 @@ export function CustomerDashboard() {
                 </div>
                 <h2>Pedido #{order.id.slice(-6)}</h2>
                 <p>{order.deliveryAddress}</p>
+                {order.deliveryCode ? (
+                  <div className="delivery-code-box">
+                    <span>Codigo para entregar al repartidor</span>
+                    <strong>{order.deliveryCode}</strong>
+                  </div>
+                ) : null}
                 <ul>
                   {order.items.map((item) => (
                     <li key={item.id}>

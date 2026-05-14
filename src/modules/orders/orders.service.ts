@@ -24,7 +24,17 @@ function randomVerificationCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-function serializeOrder(order: Prisma.OrderGetPayload<{ include: typeof orderInclude }>) {
+function serializeOrder(
+  order: Prisma.OrderGetPayload<{ include: typeof orderInclude }>,
+  options: { includeDeliveryCode?: boolean } = {}
+) {
+  const canShowDeliveryCode =
+    options.includeDeliveryCode &&
+    order.status !== OrderStatus.DELIVERED &&
+    order.status !== OrderStatus.CANCELLED &&
+    order.status !== OrderStatus.REJECTED &&
+    !order.verificationCode?.usedAt;
+
   return {
     id: order.id,
     status: order.status,
@@ -57,6 +67,7 @@ function serializeOrder(order: Prisma.OrderGetPayload<{ include: typeof orderInc
         }
       : null,
     paymentStatus: order.payment?.status ?? PaymentStatus.PENDING,
+    deliveryCode: canShowDeliveryCode ? (order.verificationCode?.code ?? null) : null,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString()
   };
@@ -149,6 +160,7 @@ export async function createOrderFromCart(userId: string) {
         },
         verificationCode: {
           create: {
+            code,
             codeHash,
             expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7)
           }
@@ -182,7 +194,7 @@ export async function createOrderFromCart(userId: string) {
   });
 
   return {
-    order: serializeOrder(result),
+    order: serializeOrder(result, { includeDeliveryCode: true }),
     verificationCode: code
   };
 }
@@ -201,7 +213,9 @@ export async function listOrders(session: SessionUser) {
     orderBy: { createdAt: "desc" }
   });
 
-  return orders.map(serializeOrder);
+  return orders.map((order) =>
+    serializeOrder(order, { includeDeliveryCode: session.role === "CUSTOMER" })
+  );
 }
 
 export async function updateOrderStatus(

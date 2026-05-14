@@ -588,6 +588,29 @@ img {
   letter-spacing: 0;
 }
 
+.delivery-code-box {
+  display: inline-grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #cfe8de;
+  border-radius: var(--radius);
+  background: #f1fbf6;
+}
+
+.delivery-code-box span {
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.delivery-code-box strong {
+  color: var(--accent-strong);
+  font-size: 1.55rem;
+  letter-spacing: 0;
+}
+
 .empty-state {
   padding: 30px;
   text-align: center;

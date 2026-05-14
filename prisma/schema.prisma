@@ -231,6 +231,7 @@ model VerificationCode {
   id        String    @id @default(cuid())
   orderId   String    @unique
   order     Order     @relation(fields: [orderId], references: [id])
+  code      String?
   codeHash  String
   expiresAt DateTime
   usedAt    DateTime?
