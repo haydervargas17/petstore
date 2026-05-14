@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCircle2, PackageCheck, XCircle } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { CheckCircle2, PackageCheck, PlusCircle, XCircle } from "lucide-react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import {
   Bar,
   BarChart,
@@ -51,6 +51,7 @@ export function AdminDashboard() {
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [courierByOrder, setCourierByOrder] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [productNotice, setProductNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function load() {
@@ -108,6 +109,46 @@ export function AdminDashboard() {
     });
   }
 
+  function createProduct(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setProductNotice(null);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    startTransition(async () => {
+      const discountPercentage = formData.get("discountPercentage");
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          description: formData.get("description"),
+          imageUrl: formData.get("imageUrl"),
+          categoryName: formData.get("categoryName"),
+          price: formData.get("price"),
+          stock: formData.get("stock"),
+          minStock: formData.get("minStock"),
+          discountPercentage:
+            discountPercentage && String(discountPercentage).trim().length > 0
+              ? discountPercentage
+              : undefined
+        })
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setError(payload.error ?? "No se pudo crear el producto");
+        return;
+      }
+
+      form.reset();
+      setProductNotice("Producto creado y publicado en el catalogo");
+      load();
+    });
+  }
+
   if (error) {
     return <EmptyState title="Panel administrativo no disponible">{error}</EmptyState>;
   }
@@ -140,6 +181,59 @@ export function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      <section className="analytics-panel product-manager">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Catalogo</p>
+            <h2>Crear producto</h2>
+          </div>
+          {productNotice ? <span className="success-chip">{productNotice}</span> : null}
+        </div>
+        <form className="product-form" onSubmit={createProduct}>
+          <label>
+            Nombre
+            <input name="name" placeholder="Alimento natural para gato" required />
+          </label>
+          <label>
+            Categoria
+            <input name="categoryName" placeholder="Alimentos" required />
+          </label>
+          <label>
+            Precio
+            <input name="price" type="number" min="1" step="100" required />
+          </label>
+          <label>
+            Stock
+            <input name="stock" type="number" min="0" step="1" required />
+          </label>
+          <label>
+            Stock minimo
+            <input name="minStock" type="number" min="0" step="1" defaultValue="5" />
+          </label>
+          <label>
+            Descuento %
+            <input name="discountPercentage" type="number" min="0" max="95" step="1" />
+          </label>
+          <label className="wide-field">
+            Imagen
+            <input name="imageUrl" type="url" placeholder="https://..." required />
+          </label>
+          <label className="wide-field">
+            Descripcion
+            <textarea
+              name="description"
+              minLength={10}
+              placeholder="Detalle comercial del producto"
+              required
+            />
+          </label>
+          <button className="primary-button" type="submit" disabled={isPending}>
+            <PlusCircle size={18} />
+            <span>{isPending ? "Creando..." : "Publicar producto"}</span>
+          </button>
+        </form>
+      </section>
 
       <div className="dashboard-grid">
         <section className="analytics-panel">

@@ -116,6 +116,19 @@ export async function listProducts(filters: ProductFilters) {
 export async function createProduct(input: CreateProductInput) {
   const slugBase = slugify(input.name);
   const slug = `${slugBase}-${Date.now().toString(36)}`;
+  const categoryId =
+    input.categoryId ??
+    (
+      await prisma.category.upsert({
+        where: { slug: slugify(input.categoryName ?? "") },
+        update: {},
+        create: {
+          name: input.categoryName ?? "General",
+          slug: slugify(input.categoryName ?? "General"),
+          description: `Categoria ${input.categoryName ?? "General"}`
+        }
+      })
+    ).id;
 
   const product = await prisma.product.create({
     data: {
@@ -128,7 +141,17 @@ export async function createProduct(input: CreateProductInput) {
       minStock: input.minStock,
       status:
         input.stock <= 0 ? ProductStatus.OUT_OF_STOCK : ProductStatus.AVAILABLE,
-      categoryId: input.categoryId
+      categoryId,
+      discounts:
+        input.discountPercentage && input.discountPercentage > 0
+          ? {
+              create: {
+                name: "Descuento activo",
+                percentage: new Prisma.Decimal(input.discountPercentage),
+                isActive: true
+              }
+            }
+          : undefined
     },
     include: productInclude
   });

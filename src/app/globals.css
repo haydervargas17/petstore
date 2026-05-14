@@ -20,7 +20,8 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, #f4f7fb 0%, #f8faf7 42%, #f7f8fb 100%);
   color: var(--text);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -34,7 +35,8 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -67,6 +69,7 @@ img {
   padding: 14px clamp(18px, 4vw, 56px);
   background: rgba(255, 255, 255, 0.92);
   border-bottom: 1px solid var(--line);
+  box-shadow: 0 10px 28px rgba(23, 33, 43, 0.06);
   backdrop-filter: blur(16px);
 }
 
@@ -242,6 +245,7 @@ img {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .catalog-summary strong,
@@ -359,6 +363,16 @@ img {
 
 .product-card {
   overflow: hidden;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  border-color: #c9d8e6;
+  box-shadow: 0 20px 46px rgba(23, 33, 43, 0.12);
 }
 
 .product-card img {
@@ -599,10 +613,94 @@ img {
   padding: 18px;
 }
 
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent);
+}
+
 .stat-card strong {
   display: block;
   margin-top: 6px;
   font-size: 1.8rem;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.panel-heading h2 {
+  margin: 0;
+}
+
+.success-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #e7f6ef;
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.product-manager {
+  border-color: #cfe1dc;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfb 100%);
+}
+
+.product-form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.product-form label {
+  display: grid;
+  grid-column: span 2;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.product-form .wide-field {
+  grid-column: span 3;
+}
+
+.product-form input,
+.product-form textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  outline: 0;
+}
+
+.product-form textarea {
+  min-height: 86px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.product-form button {
+  grid-column: span 2;
+  align-self: end;
 }
 
 .compact-list div {
@@ -663,6 +761,27 @@ img {
   font-weight: 800;
 }
 
+.delivery-actions button:first-of-type {
+  border-color: #d8e6f8;
+  background: #eef4fb;
+  color: var(--blue);
+}
+
+.delivery-actions button:nth-of-type(2) {
+  border-color: #cfe8de;
+  background: #e7f6ef;
+  color: var(--accent-strong);
+}
+
+.completed-deliveries {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
 @media (max-width: 920px) {
   .topbar {
     grid-template-columns: 1fr;
@@ -677,8 +796,15 @@ img {
   .section-heading,
   .auth-layout,
   .dashboard-grid,
-  .delivery-card {
+  .delivery-card,
+  .product-form {
     grid-template-columns: 1fr;
+  }
+
+  .product-form label,
+  .product-form .wide-field,
+  .product-form button {
+    grid-column: 1;
   }
 
   .catalog-heading,
@@ -707,7 +833,8 @@ img {
   }
 
   .filters-bar,
-  .segmented-control {
+  .segmented-control,
+  .panel-heading {
     align-items: stretch;
     flex-direction: column;
   }

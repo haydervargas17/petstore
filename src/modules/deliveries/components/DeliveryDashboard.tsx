@@ -92,20 +92,27 @@ export function DeliveryDashboard() {
     return <EmptyState title="Cargando domicilios" />;
   }
 
+  const activeDeliveries = deliveries.filter(
+    (delivery) => delivery.status !== "DELIVERED"
+  );
+  const completedDeliveries = deliveries.filter(
+    (delivery) => delivery.status === "DELIVERED"
+  );
+
   return (
     <section className="page-panel">
       <div className="section-heading">
         <div>
           <p className="eyebrow">Repartidor</p>
-          <h1>Entregas asignadas</h1>
+          <h1>Pedidos pendientes</h1>
         </div>
       </div>
 
-      {deliveries.length === 0 ? (
-        <EmptyState title="No tienes entregas asignadas" />
+      {activeDeliveries.length === 0 ? (
+        <EmptyState title="No tienes pedidos pendientes" />
       ) : (
         <div className="order-list">
-          {deliveries.map((delivery) => (
+          {activeDeliveries.map((delivery) => (
             <article className="order-card delivery-card" key={delivery.id}>
               <div>
                 <div className="product-card-top">
@@ -153,7 +160,7 @@ export function DeliveryDashboard() {
                   onClick={() => verify(delivery.id)}
                 >
                   <Check size={17} />
-                  <span>Confirmar</span>
+                  <span>Completar entrega</span>
                 </button>
                 <button
                   type="button"
@@ -168,6 +175,25 @@ export function DeliveryDashboard() {
           ))}
         </div>
       )}
+
+      {completedDeliveries.length > 0 ? (
+        <section className="completed-deliveries">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Historial</p>
+              <h2>Entregas completadas</h2>
+            </div>
+          </div>
+          <div className="compact-list">
+            {completedDeliveries.slice(0, 6).map((delivery) => (
+              <div key={delivery.id}>
+                <span>{delivery.order.customerName}</span>
+                <strong>{formatCurrency(delivery.order.total)}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </section>
   );
 }

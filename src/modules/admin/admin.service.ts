@@ -35,6 +35,9 @@ export async function getDashboardStats() {
     }),
     prisma.orderItem.groupBy({
       by: ["productId", "productName"],
+      where: {
+        order: { status: OrderStatus.DELIVERED }
+      },
       _sum: { quantity: true, total: true },
       orderBy: { _sum: { quantity: "desc" } },
       take: 6
