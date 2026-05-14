@@ -21,6 +21,7 @@ import {
 } from "recharts";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { StatusPill } from "@/shared/components/StatusPill";
+import { useToast } from "@/shared/components/ToastProvider";
 import { formatCurrency } from "@/shared/lib/money";
 import { PRODUCT_CATEGORIES } from "@/shared/lib/product-categories";
 import type { ApiEnvelope } from "@/shared/types/domain";
@@ -71,8 +72,7 @@ export function AdminDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [courierByOrder, setCourierByOrder] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
-  const [productNotice, setProductNotice] = useState<string | null>(null);
-  const [stockNotice, setStockNotice] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   function load() {
@@ -140,10 +140,11 @@ export function AdminDashboard() {
 
       if (!response.ok) {
         const payload = await response.json();
-        setError(payload.error);
+        showToast(payload.error ?? "No se pudo actualizar el pedido", "error");
         return;
       }
 
+      showToast("Pedido actualizado correctamente", "success");
       load();
     });
   }
@@ -151,8 +152,6 @@ export function AdminDashboard() {
   function createProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setProductNotice(null);
-    setStockNotice(null);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -179,12 +178,12 @@ export function AdminDashboard() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "No se pudo crear el producto");
+        showToast(payload.error ?? "No se pudo crear el producto", "error");
         return;
       }
 
       form.reset();
-      setProductNotice("Producto creado y publicado en el catalogo");
+      showToast(payload.message ?? "Producto creado y publicado en el catalogo", "success");
       load();
     });
   }
@@ -192,8 +191,6 @@ export function AdminDashboard() {
   function restockExistingProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setProductNotice(null);
-    setStockNotice(null);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -211,12 +208,12 @@ export function AdminDashboard() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "No se pudo actualizar el stock");
+        showToast(payload.error ?? "No se pudo actualizar el stock", "error");
         return;
       }
 
       form.reset();
-      setStockNotice("Stock actualizado");
+      showToast(payload.message ?? "Stock actualizado correctamente", "success");
       load();
     });
   }
@@ -484,7 +481,6 @@ export function AdminDashboard() {
                 <p className="eyebrow">Catalogo</p>
                 <h2>Crear producto</h2>
               </div>
-              {productNotice ? <span className="success-chip">{productNotice}</span> : null}
             </div>
             <form className="product-form" onSubmit={createProduct}>
               <label>
@@ -548,7 +544,6 @@ export function AdminDashboard() {
                 <p className="eyebrow">Inventario</p>
                 <h2>Reabastecer producto existente</h2>
               </div>
-              {stockNotice ? <span className="success-chip">{stockNotice}</span> : null}
             </div>
             <form className="product-form restock-form" onSubmit={restockExistingProduct}>
               <label className="wide-field">

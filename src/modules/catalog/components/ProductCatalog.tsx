@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { StatusPill } from "@/shared/components/StatusPill";
+import { queueToast, useToast } from "@/shared/components/ToastProvider";
 import { formatCurrency } from "@/shared/lib/money";
 import type { ApiEnvelope, ProductListItem } from "@/shared/types/domain";
 import { demoProducts } from "../data/demo-products";
@@ -30,7 +31,7 @@ export function ProductCatalog() {
   const [category, setCategory] = useState("all");
   const [availability, setAvailability] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("featured");
-  const [notice, setNotice] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -106,7 +107,6 @@ export function ProductCatalog() {
     query.trim().length > 0 || category !== "all" || availability !== "all";
 
   function addToCart(productId: string) {
-    setNotice(null);
     startTransition(async () => {
       const response = await fetch("/api/cart", {
         method: "POST",
@@ -115,12 +115,16 @@ export function ProductCatalog() {
       });
 
       if (response.status === 401 || response.status === 403) {
+        queueToast("Inicia sesion como cliente para agregar productos", "info");
         window.location.href = "/login";
         return;
       }
 
       const payload = await response.json();
-      setNotice(response.ok ? "Producto agregado al carrito" : payload.error);
+      showToast(
+        response.ok ? payload.message ?? "Producto agregado al carrito" : payload.error,
+        response.ok ? "success" : "error"
+      );
     });
   }
 
@@ -269,8 +273,6 @@ export function ProductCatalog() {
           </button>
         ) : null}
       </div>
-
-      {notice ? <p className="inline-notice marketplace-notice">{notice}</p> : null}
 
       <div className="product-grid marketplace-grid" id="catalog-products">
         {filteredProducts.length === 0 ? (

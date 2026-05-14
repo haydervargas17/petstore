@@ -1,15 +1,15 @@
 "use client";
 
 import { UserPlus } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
+import { queueToast, useToast } from "@/shared/components/ToastProvider";
 
 export function RegisterForm() {
-  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
     const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {
@@ -28,10 +28,11 @@ export function RegisterForm() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "No se pudo registrar la cuenta");
+        showToast(payload.error ?? "No se pudo registrar la cuenta", "error");
         return;
       }
 
+      queueToast(payload.message ?? "Usuario creado correctamente", "success");
       window.location.href = "/cliente";
     });
   }
@@ -47,7 +48,7 @@ export function RegisterForm() {
         <input name="email" type="email" autoComplete="email" required />
       </label>
       <label>
-        Teléfono
+        Telefono
         <input name="phone" autoComplete="tel" required />
       </label>
       <label>
@@ -55,14 +56,13 @@ export function RegisterForm() {
         <input name="age" type="number" min="13" max="120" />
       </label>
       <label>
-        Dirección de domicilio
+        Direccion de domicilio
         <input name="address" autoComplete="street-address" required />
       </label>
       <label>
-        Contraseña
+        Contrasena
         <input name="password" type="password" autoComplete="new-password" required />
       </label>
-      {error ? <p className="form-error">{error}</p> : null}
       <button className="primary-button" type="submit" disabled={isPending}>
         <UserPlus size={18} />
         <span>{isPending ? "Creando..." : "Crear cuenta"}</span>

@@ -2,13 +2,21 @@
 
 import { LogOut } from "lucide-react";
 import { useTransition } from "react";
+import { queueToast, useToast } from "@/shared/components/ToastProvider";
 
 export function LogoutButton() {
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   function signOut() {
     startTransition(async () => {
-      await fetch("/api/auth/logout", { method: "POST" });
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        showToast("No se pudo cerrar sesion", "error");
+        return;
+      }
+
+      queueToast("Sesion cerrada correctamente", "info");
       window.location.href = "/";
     });
   }

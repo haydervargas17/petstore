@@ -1,7 +1,8 @@
 "use client";
 
 import { LogIn } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
+import { queueToast, useToast } from "@/shared/components/ToastProvider";
 import { roleHomePath } from "@/shared/lib/navigation";
 import type { ApiEnvelope, SessionUser } from "@/shared/types/domain";
 
@@ -10,12 +11,11 @@ type LoginResponse = ApiEnvelope<{
 }>;
 
 export function LoginForm() {
-  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
     const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {
@@ -30,11 +30,12 @@ export function LoginForm() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "No se pudo iniciar sesion");
+        showToast(payload.error ?? "No se pudo iniciar sesion", "error");
         return;
       }
 
       const data = payload as LoginResponse;
+      queueToast(payload.message ?? "Inicio de sesion exitoso", "success");
       window.location.href = roleHomePath(data.data.user.role);
     });
   }
@@ -49,7 +50,6 @@ export function LoginForm() {
         Contrasena
         <input name="password" type="password" autoComplete="current-password" required />
       </label>
-      {error ? <p className="form-error">{error}</p> : null}
       <button className="primary-button" type="submit" disabled={isPending}>
         <LogIn size={18} />
         <span>{isPending ? "Entrando..." : "Iniciar sesion"}</span>

@@ -11,6 +11,7 @@ import {
 import { useEffect, useState, useTransition } from "react";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { StatusPill } from "@/shared/components/StatusPill";
+import { useToast } from "@/shared/components/ToastProvider";
 import { formatCurrency } from "@/shared/lib/money";
 import type { ApiEnvelope } from "@/shared/types/domain";
 
@@ -36,6 +37,7 @@ export function DeliveryDashboard() {
   const [filter, setFilter] = useState<DeliveryFilter>("active");
   const [error, setError] = useState<string | null>(null);
   const [codeByDelivery, setCodeByDelivery] = useState<Record<string, string>>({});
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   function load() {
@@ -68,10 +70,14 @@ export function DeliveryDashboard() {
 
       if (!response.ok) {
         const payload = await response.json();
-        setError(payload.error);
+        showToast(payload.error ?? "No se pudo actualizar la entrega", "error");
         return;
       }
 
+      showToast(
+        action === "incident" ? "Incidencia reportada" : "Entrega marcada en camino",
+        "success"
+      );
       load();
     });
   }
@@ -86,10 +92,11 @@ export function DeliveryDashboard() {
 
       if (!response.ok) {
         const payload = await response.json();
-        setError(payload.error);
+        showToast(payload.error ?? "Codigo de entrega invalido", "error");
         return;
       }
 
+      showToast("Entrega completada correctamente", "success");
       load();
     });
   }

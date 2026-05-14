@@ -4,6 +4,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { EmptyState } from "@/shared/components/EmptyState";
+import { useToast } from "@/shared/components/ToastProvider";
 import { formatCurrency } from "@/shared/lib/money";
 import type { ApiEnvelope, ProductListItem } from "@/shared/types/domain";
 
@@ -26,6 +27,7 @@ export function CartPageClient() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [verificationCode, setVerificationCode] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   function loadCart() {
@@ -52,10 +54,14 @@ export function CartPageClient() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error);
+        showToast(payload.error ?? "No se pudo actualizar el carrito", "error");
         return;
       }
       setCart((payload as CartResponse).data.cart);
+      showToast(
+        quantity <= 0 ? "Producto eliminado del carrito" : "Carrito actualizado",
+        "success"
+      );
     });
   }
 
@@ -65,11 +71,12 @@ export function CartPageClient() {
       const response = await fetch("/api/orders", { method: "POST" });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error);
+        showToast(payload.error ?? "No se pudo confirmar el pedido", "error");
         return;
       }
       setCart({ id: "empty", items: [], total: 0 });
       setVerificationCode(payload.data.verificationCode);
+      showToast(payload.message ?? "Pedido creado correctamente", "success");
     });
   }
 
@@ -111,8 +118,6 @@ export function CartPageClient() {
         </div>
         <strong>{formatCurrency(cart.total)}</strong>
       </div>
-
-      {error ? <p className="form-error">{error}</p> : null}
 
       <div className="cart-list">
         {cart.items.map((item) => (
