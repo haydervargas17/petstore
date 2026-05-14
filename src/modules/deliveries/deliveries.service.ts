@@ -1,4 +1,4 @@
-import { DeliveryStatus, OrderStatus } from "@prisma/client";
+import { DeliveryStatus, OrderStatus, PaymentStatus } from "@prisma/client";
 import { HttpError } from "@/shared/lib/api";
 import { verifyPassword } from "@/shared/lib/password";
 import { prisma } from "@/shared/lib/prisma";
@@ -120,6 +120,9 @@ export async function verifyDeliveryCode(
       order: {
         update: {
           status: OrderStatus.DELIVERED,
+          payment: {
+            update: { status: PaymentStatus.PAID }
+          },
           verificationCode: {
             update: { usedAt: new Date() }
           },

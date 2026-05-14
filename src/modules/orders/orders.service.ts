@@ -210,11 +210,65 @@ export async function updateOrderStatus(
 ) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { delivery: true }
+    include: { delivery: true, saleHistory: true, verificationCode: true }
   });
 
   if (!order) {
     throw new HttpError(404, "Pedido no encontrado");
+  }
+
+  const hasCompletedDelivery =
+    order.status === OrderStatus.DELIVERED ||
+    order.delivery?.status === DeliveryStatus.DELIVERED ||
+    Boolean(order.saleHistory) ||
+    Boolean(order.verificationCode?.usedAt);
+
+  if (hasCompletedDelivery) {
+    throw new HttpError(
+      409,
+      "Este pedido ya fue entregado y no puede cambiar de estado"
+    );
+  }
+
+  if (
+    order.status === OrderStatus.CANCELLED ||
+    order.status === OrderStatus.REJECTED
+  ) {
+    throw new HttpError(
+      409,
+      "Este pedido ya esta cerrado y no puede cambiar de estado"
+    );
+  }
+
+  if (
+    order.status === OrderStatus.PENDING &&
+    input.status !== OrderStatus.APPROVED &&
+    input.status !== OrderStatus.CANCELLED
+  ) {
+    throw new HttpError(409, "Un pedido pendiente solo puede aprobarse o cancelarse");
+  }
+
+  if (
+    order.status === OrderStatus.APPROVED &&
+    input.status !== OrderStatus.SHIPPED &&
+    input.status !== OrderStatus.CANCELLED
+  ) {
+    throw new HttpError(409, "Un pedido aprobado solo puede enviarse o cancelarse");
+  }
+
+  if (
+    (order.status === OrderStatus.SHIPPED ||
+      order.status === OrderStatus.ON_THE_WAY) &&
+    input.status !== OrderStatus.SHIPPED
+  ) {
+    throw new HttpError(
+      409,
+      "Un pedido en reparto solo puede completarlo el repartidor"
+    );
+  }
+
+  if (input.status === OrderStatus.SHIPPED && !input.courierId) {
+    throw new HttpError(422, "Debes asignar un repartidor");
   }
 
   const updated = await prisma.order.update({

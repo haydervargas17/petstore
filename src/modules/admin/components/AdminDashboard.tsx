@@ -218,6 +218,80 @@ export function AdminDashboard() {
     return <EmptyState title="Cargando dashboard" />;
   }
 
+  function renderOrderActions(order: Order) {
+    if (order.status === "DELIVERED") {
+      return <span className="closed-order-note">Venta entregada</span>;
+    }
+
+    if (["CANCELLED", "REJECTED"].includes(order.status)) {
+      return <span className="closed-order-note">Pedido cerrado</span>;
+    }
+
+    if (["SHIPPED", "ON_THE_WAY"].includes(order.status)) {
+      return <span className="closed-order-note">En manos del repartidor</span>;
+    }
+
+    if (order.status === "PENDING") {
+      return (
+        <>
+          <button
+            type="button"
+            aria-label="Aprobar"
+            disabled={isPending}
+            onClick={() => changeStatus(order.id, "APPROVED")}
+          >
+            <CheckCircle2 size={17} />
+          </button>
+          <button
+            type="button"
+            aria-label="Cancelar"
+            disabled={isPending}
+            onClick={() => changeStatus(order.id, "CANCELLED")}
+          >
+            <XCircle size={17} />
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <select
+          aria-label="Repartidor"
+          value={courierByOrder[order.id] ?? couriers[0]?.id ?? ""}
+          onChange={(event) =>
+            setCourierByOrder((current) => ({
+              ...current,
+              [order.id]: event.target.value
+            }))
+          }
+        >
+          {couriers.map((courier) => (
+            <option key={courier.id} value={courier.id}>
+              {courier.fullName}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          aria-label="Enviar"
+          disabled={isPending || couriers.length === 0}
+          onClick={() => changeStatus(order.id, "SHIPPED")}
+        >
+          <PackageCheck size={17} />
+        </button>
+        <button
+          type="button"
+          aria-label="Cancelar"
+          disabled={isPending}
+          onClick={() => changeStatus(order.id, "CANCELLED")}
+        >
+          <XCircle size={17} />
+        </button>
+      </>
+    );
+  }
+
   const cards = [
     ["Ingresos", formatCurrency(dashboard.totals.revenue)],
     ["Pedidos", dashboard.totals.totalOrders.toString()],
@@ -383,46 +457,7 @@ export function AdminDashboard() {
                 <p>{formatCurrency(order.total)}</p>
               </div>
               <div className="action-cluster">
-                <select
-                  aria-label="Repartidor"
-                  value={courierByOrder[order.id] ?? couriers[0]?.id ?? ""}
-                  onChange={(event) =>
-                    setCourierByOrder((current) => ({
-                      ...current,
-                      [order.id]: event.target.value
-                    }))
-                  }
-                >
-                  {couriers.map((courier) => (
-                    <option key={courier.id} value={courier.id}>
-                      {courier.fullName}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  aria-label="Aprobar"
-                  disabled={isPending}
-                  onClick={() => changeStatus(order.id, "APPROVED")}
-                >
-                  <CheckCircle2 size={17} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Enviar"
-                  disabled={isPending}
-                  onClick={() => changeStatus(order.id, "SHIPPED")}
-                >
-                  <PackageCheck size={17} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Cancelar"
-                  disabled={isPending}
-                  onClick={() => changeStatus(order.id, "CANCELLED")}
-                >
-                  <XCircle size={17} />
-                </button>
+                {renderOrderActions(order)}
               </div>
             </article>
           ))}

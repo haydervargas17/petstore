@@ -743,6 +743,19 @@ img {
   color: var(--text);
 }
 
+.closed-order-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f6f8fa;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .action-cluster button:first-child {
   background: #e7f6ef;
   color: var(--accent-strong);
