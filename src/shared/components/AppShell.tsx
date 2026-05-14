@@ -5,9 +5,14 @@ import {
   PawPrint,
   ShoppingCart,
   Truck,
+  User,
   UserPlus
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { LogoutButton } from "@/shared/components/LogoutButton";
+import { getSession } from "@/shared/lib/auth";
+import { roleLabel } from "@/shared/lib/navigation";
+import type { AppRole } from "@/shared/types/domain";
 
 type AppShellProps = {
   children: ReactNode;
@@ -15,14 +20,34 @@ type AppShellProps = {
 };
 
 const navItems = [
-  { href: "/", label: "Catálogo", icon: PawPrint, key: "catalog" },
+  { href: "/", label: "Catalogo", icon: PawPrint, key: "catalog" },
   { href: "/carrito", label: "Carrito", icon: ShoppingCart, key: "cart" },
   { href: "/cliente", label: "Cliente", icon: LayoutDashboard, key: "customer" },
-  { href: "/admin", label: "Admin", icon: LayoutDashboard, key: "admin" },
+  { href: "/admin", label: "Administracion", icon: LayoutDashboard, key: "admin" },
   { href: "/repartidor", label: "Repartidor", icon: Truck, key: "delivery" }
 ] as const;
 
-export function AppShell({ children, active = "catalog" }: AppShellProps) {
+function allowedKeysForRole(role: AppRole | null) {
+  if (role === "CUSTOMER") {
+    return new Set(["catalog", "cart", "customer"]);
+  }
+
+  if (role === "ADMIN") {
+    return new Set(["catalog", "admin"]);
+  }
+
+  if (role === "DELIVERY") {
+    return new Set(["catalog", "delivery"]);
+  }
+
+  return new Set(["catalog"]);
+}
+
+export async function AppShell({ children, active = "catalog" }: AppShellProps) {
+  const session = await getSession();
+  const allowedKeys = allowedKeysForRole(session?.role ?? null);
+  const visibleNavItems = navItems.filter((item) => allowedKeys.has(item.key));
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -33,8 +58,8 @@ export function AppShell({ children, active = "catalog" }: AppShellProps) {
           <span>Pet Store</span>
         </Link>
 
-        <nav className="main-nav" aria-label="Navegación principal">
-          {navItems.map((item) => {
+        <nav className="main-nav" aria-label="Navegacion principal">
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             return (
               <Link
@@ -50,13 +75,25 @@ export function AppShell({ children, active = "catalog" }: AppShellProps) {
         </nav>
 
         <div className="topbar-actions">
-          <Link className="icon-link" href="/login" aria-label="Iniciar sesión">
-            <LogIn size={18} />
-          </Link>
-          <Link className="primary-link" href="/registro">
-            <UserPlus size={17} />
-            <span>Registro</span>
-          </Link>
+          {session ? (
+            <>
+              <span className="user-chip">
+                <User size={16} />
+                <span>{roleLabel(session.role)}</span>
+              </span>
+              <LogoutButton />
+            </>
+          ) : (
+            <>
+              <Link className="icon-link" href="/login" aria-label="Iniciar sesion">
+                <LogIn size={18} />
+              </Link>
+              <Link className="primary-link" href="/registro">
+                <UserPlus size={17} />
+                <span>Registro</span>
+              </Link>
+            </>
+          )}
         </div>
       </header>
       <main>{children}</main>

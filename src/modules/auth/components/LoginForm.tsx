@@ -2,23 +2,12 @@
 
 import { LogIn } from "lucide-react";
 import { useState, useTransition } from "react";
+import { roleHomePath } from "@/shared/lib/navigation";
 import type { ApiEnvelope, SessionUser } from "@/shared/types/domain";
 
 type LoginResponse = ApiEnvelope<{
   user: SessionUser;
 }>;
-
-function roleTarget(role: SessionUser["role"]) {
-  if (role === "ADMIN") {
-    return "/admin";
-  }
-
-  if (role === "DELIVERY") {
-    return "/repartidor";
-  }
-
-  return "/cliente";
-}
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
@@ -41,12 +30,12 @@ export function LoginForm() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "No se pudo iniciar sesión");
+        setError(payload.error ?? "No se pudo iniciar sesion");
         return;
       }
 
       const data = payload as LoginResponse;
-      window.location.href = roleTarget(data.data.user.role);
+      window.location.href = roleHomePath(data.data.user.role);
     });
   }
 
@@ -57,13 +46,13 @@ export function LoginForm() {
         <input name="email" type="email" autoComplete="email" required />
       </label>
       <label>
-        Contraseña
+        Contrasena
         <input name="password" type="password" autoComplete="current-password" required />
       </label>
       {error ? <p className="form-error">{error}</p> : null}
       <button className="primary-button" type="submit" disabled={isPending}>
         <LogIn size={18} />
-        <span>{isPending ? "Entrando..." : "Iniciar sesión"}</span>
+        <span>{isPending ? "Entrando..." : "Iniciar sesion"}</span>
       </button>
     </form>
   );
