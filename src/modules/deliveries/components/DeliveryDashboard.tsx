@@ -1,6 +1,13 @@
 "use client";
 
-import { Check, Navigation, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  Clock3,
+  Navigation,
+  PackageCheck,
+  TriangleAlert
+} from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { StatusPill } from "@/shared/components/StatusPill";
@@ -22,8 +29,11 @@ type Delivery = {
   };
 };
 
+type DeliveryFilter = "active" | "completed";
+
 export function DeliveryDashboard() {
   const [deliveries, setDeliveries] = useState<Delivery[] | null>(null);
+  const [filter, setFilter] = useState<DeliveryFilter>("active");
   const [error, setError] = useState<string | null>(null);
   const [codeByDelivery, setCodeByDelivery] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
@@ -98,6 +108,11 @@ export function DeliveryDashboard() {
   const completedDeliveries = deliveries.filter(
     (delivery) => delivery.status === "DELIVERED"
   );
+  const inRouteDeliveries = activeDeliveries.filter(
+    (delivery) => delivery.status !== "ASSIGNED"
+  );
+  const visibleDeliveries =
+    filter === "completed" ? completedDeliveries : activeDeliveries;
 
   return (
     <section className="page-panel">
@@ -112,99 +127,143 @@ export function DeliveryDashboard() {
         </div>
       </div>
 
-      {activeDeliveries.length === 0 ? (
-        <EmptyState title="No tienes pedidos pendientes" />
-      ) : (
-        <div className="order-list">
-          {activeDeliveries.map((delivery) => (
-            <article className="order-card delivery-card" key={delivery.id}>
-              <div>
-                <div className="product-card-top">
-                  <span>{delivery.order.customerName}</span>
-                  <StatusPill status={delivery.status} />
-                </div>
-                <h2>{delivery.order.deliveryAddress}</h2>
-                <p>{delivery.order.customerPhone}</p>
-                <ul>
-                  {delivery.order.items.map((item) => (
-                    <li key={item.id}>
-                      {item.quantity} x {item.productName}
-                    </li>
-                  ))}
-                </ul>
-                <strong>{formatCurrency(delivery.order.total)}</strong>
-              </div>
+      <div className="profile-dashboard">
+        <div className="profile-summary-grid">
+          <div className="profile-summary-card">
+            <PackageCheck size={20} />
+            <span>Asignados</span>
+            <strong>{activeDeliveries.length}</strong>
+          </div>
+          <div className="profile-summary-card">
+            <Navigation size={20} />
+            <span>En camino</span>
+            <strong>{inRouteDeliveries.length}</strong>
+          </div>
+          <div className="profile-summary-card">
+            <CheckCircle2 size={20} />
+            <span>Entregados</span>
+            <strong>{completedDeliveries.length}</strong>
+          </div>
+          <div className="profile-summary-card">
+            <Clock3 size={20} />
+            <span>Total cartera</span>
+            <strong>
+              {formatCurrency(
+                activeDeliveries.reduce((sum, delivery) => sum + delivery.order.total, 0)
+              )}
+            </strong>
+          </div>
+        </div>
 
-              <div className="delivery-actions">
-                {delivery.status === "ASSIGNED" ? (
+        <div className="dashboard-tabs" aria-label="Filtrar entregas">
+          <button
+            type="button"
+            className={filter === "active" ? "is-active" : undefined}
+            onClick={() => setFilter("active")}
+          >
+            Pendientes
+          </button>
+          <button
+            type="button"
+            className={filter === "completed" ? "is-active" : undefined}
+            onClick={() => setFilter("completed")}
+          >
+            Completadas
+          </button>
+        </div>
+
+        {visibleDeliveries.length === 0 ? (
+          <EmptyState
+            title={
+              filter === "completed"
+                ? "Aun no tienes entregas completadas"
+                : "No tienes pedidos pendientes"
+            }
+          />
+        ) : filter === "active" ? (
+          <div className="order-list">
+            {visibleDeliveries.map((delivery) => (
+              <article className="order-card delivery-card" key={delivery.id}>
+                <div>
+                  <div className="product-card-top">
+                    <span>{delivery.order.customerName}</span>
+                    <StatusPill status={delivery.status} />
+                  </div>
+                  <h2>{delivery.order.deliveryAddress}</h2>
+                  <p>{delivery.order.customerPhone}</p>
+                  <ul>
+                    {delivery.order.items.map((item) => (
+                      <li key={item.id}>
+                        {item.quantity} x {item.productName}
+                      </li>
+                    ))}
+                  </ul>
+                  <strong>{formatCurrency(delivery.order.total)}</strong>
+                </div>
+
+                <div className="delivery-actions">
+                  {delivery.status === "ASSIGNED" ? (
+                    <button
+                      className="delivery-start-button"
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => updateDelivery(delivery.id, "start")}
+                    >
+                      <Navigation size={17} />
+                      <span>Marcar en camino</span>
+                    </button>
+                  ) : null}
+                  <label>
+                    Codigo del cliente
+                    <input
+                      value={codeByDelivery[delivery.id] ?? ""}
+                      onChange={(event) =>
+                        setCodeByDelivery((current) => ({
+                          ...current,
+                          [delivery.id]: event.target.value
+                        }))
+                      }
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="6 digitos"
+                    />
+                    <span>Solo se completa si coincide con el codigo del pedido.</span>
+                  </label>
                   <button
-                    className="delivery-start-button"
+                    className="delivery-complete-button"
                     type="button"
                     disabled={isPending}
-                    onClick={() => updateDelivery(delivery.id, "start")}
+                    onClick={() => verify(delivery.id)}
                   >
-                    <Navigation size={17} />
-                    <span>Marcar en camino</span>
+                    <Check size={17} />
+                    <span>Completar entrega</span>
                   </button>
-                ) : null}
-                <label>
-                  Codigo del cliente
-                  <input
-                    value={codeByDelivery[delivery.id] ?? ""}
-                    onChange={(event) =>
-                      setCodeByDelivery((current) => ({
-                        ...current,
-                        [delivery.id]: event.target.value
-                      }))
-                    }
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="6 digitos"
-                  />
-                  <span>Solo se completa si coincide con el codigo del pedido.</span>
-                </label>
-                <button
-                  className="delivery-complete-button"
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => verify(delivery.id)}
-                >
-                  <Check size={17} />
-                  <span>Completar entrega</span>
-                </button>
-                <button
-                  className="delivery-incident-button"
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => updateDelivery(delivery.id, "incident")}
-                >
-                  <TriangleAlert size={17} />
-                  <span>Incidencia</span>
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-
-      {completedDeliveries.length > 0 ? (
-        <section className="completed-deliveries">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Historial</p>
-              <h2>Entregas completadas</h2>
-            </div>
-          </div>
-          <div className="compact-list">
-            {completedDeliveries.slice(0, 6).map((delivery) => (
-              <div key={delivery.id}>
-                <span>{delivery.order.customerName}</span>
-                <strong>{formatCurrency(delivery.order.total)}</strong>
-              </div>
+                  <button
+                    className="delivery-incident-button"
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => updateDelivery(delivery.id, "incident")}
+                  >
+                    <TriangleAlert size={17} />
+                    <span>Incidencia</span>
+                  </button>
+                </div>
+              </article>
             ))}
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <div className="completed-deliveries">
+            <div className="compact-list">
+              {visibleDeliveries.map((delivery) => (
+                <div key={delivery.id}>
+                  <span>{delivery.order.customerName}</span>
+                  <strong>{formatCurrency(delivery.order.total)}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

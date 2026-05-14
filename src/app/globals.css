@@ -777,6 +777,111 @@ img {
   font-size: 0.78rem;
 }
 
+.profile-dashboard {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-summary-card {
+  display: grid;
+  gap: 8px;
+  min-height: 118px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 252, 251, 0.94) 100%);
+  box-shadow: 0 12px 30px rgba(23, 33, 43, 0.06);
+}
+
+.profile-summary-card svg {
+  color: var(--accent);
+}
+
+.profile-summary-card span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.profile-summary-card strong {
+  align-self: end;
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  line-height: 1.05;
+}
+
+.dashboard-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f1f5f8;
+}
+
+.dashboard-tabs button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.dashboard-tabs button:hover,
+.dashboard-tabs button.is-active {
+  background: var(--surface);
+  color: var(--accent-strong);
+  box-shadow: 0 8px 18px rgba(23, 33, 43, 0.08);
+}
+
+.customer-order-list {
+  gap: 14px;
+}
+
+.customer-order-card {
+  align-items: start;
+  border-color: #d7e7e2;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fbfefd 100%);
+}
+
+.customer-order-card > div:first-child {
+  display: grid;
+  gap: 10px;
+}
+
+.customer-order-card p {
+  min-height: 0;
+  color: var(--muted);
+}
+
+.order-total-block {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  min-width: 138px;
+}
+
+.order-total-block span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.order-total-block strong {
+  font-size: 1.15rem;
+}
+
 .product-manager {
   border-color: #cfe1dc;
   background: linear-gradient(180deg, #ffffff 0%, #f8fcfb 100%);
@@ -980,7 +1085,8 @@ img {
     flex-direction: column;
   }
 
-  .stat-grid {
+  .stat-grid,
+  .profile-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1018,8 +1124,13 @@ img {
 
   .cart-row,
   .order-card,
-  .stat-grid {
+  .stat-grid,
+  .profile-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .order-total-block {
+    justify-items: start;
   }
 
   .cart-row img {
