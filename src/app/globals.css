@@ -488,6 +488,14 @@ img {
   font-weight: 700;
 }
 
+.delivery-actions label span,
+.section-note {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .auth-form input,
 .delivery-actions input {
   min-height: 42px;
@@ -681,6 +689,7 @@ img {
 }
 
 .product-form input,
+.product-form select,
 .product-form textarea {
   width: 100%;
   min-height: 42px;

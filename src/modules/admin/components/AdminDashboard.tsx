@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, PackageCheck, PlusCircle, XCircle } from "lucide-react";
+import { CheckCircle2, PackageCheck, PlusCircle, RotateCw, XCircle } from "lucide-react";
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 import {
   Bar,
@@ -14,6 +14,7 @@ import {
 import { EmptyState } from "@/shared/components/EmptyState";
 import { StatusPill } from "@/shared/components/StatusPill";
 import { formatCurrency } from "@/shared/lib/money";
+import { PRODUCT_CATEGORIES } from "@/shared/lib/product-categories";
 import type { ApiEnvelope } from "@/shared/types/domain";
 
 type Dashboard = {
@@ -45,29 +46,53 @@ type Courier = {
   phone: string;
 };
 
+type Product = {
+  id: string;
+  name: string;
+  category: string;
+  stock: number;
+};
+
 export function AdminDashboard() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [couriers, setCouriers] = useState<Courier[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [courierByOrder, setCourierByOrder] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [productNotice, setProductNotice] = useState<string | null>(null);
+  const [stockNotice, setStockNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function load() {
     Promise.all([
       fetch("/api/admin/dashboard"),
       fetch("/api/orders"),
-      fetch("/api/admin/couriers")
+      fetch("/api/admin/couriers"),
+      fetch("/api/products")
     ])
-      .then(async ([dashboardResponse, ordersResponse, couriersResponse]) => {
+      .then(async ([
+        dashboardResponse,
+        ordersResponse,
+        couriersResponse,
+        productsResponse
+      ]) => {
         const dashboardPayload = await dashboardResponse.json();
         const ordersPayload = await ordersResponse.json();
         const couriersPayload = await couriersResponse.json();
+        const productsPayload = await productsResponse.json();
 
-        if (!dashboardResponse.ok || !ordersResponse.ok || !couriersResponse.ok) {
+        if (
+          !dashboardResponse.ok ||
+          !ordersResponse.ok ||
+          !couriersResponse.ok ||
+          !productsResponse.ok
+        ) {
           setError(
-            dashboardPayload.error ?? ordersPayload.error ?? couriersPayload.error
+            dashboardPayload.error ??
+              ordersPayload.error ??
+              couriersPayload.error ??
+              productsPayload.error
           );
           return;
         }
@@ -78,6 +103,9 @@ export function AdminDashboard() {
         setOrders((ordersPayload as ApiEnvelope<{ orders: Order[] }>).data.orders);
         setCouriers(
           (couriersPayload as ApiEnvelope<{ couriers: Courier[] }>).data.couriers
+        );
+        setProducts(
+          (productsPayload as ApiEnvelope<{ products: Product[] }>).data.products
         );
       })
       .catch(() => setError("No se pudo cargar el panel"));
@@ -113,6 +141,7 @@ export function AdminDashboard() {
     event.preventDefault();
     setError(null);
     setProductNotice(null);
+    setStockNotice(null);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -145,6 +174,38 @@ export function AdminDashboard() {
 
       form.reset();
       setProductNotice("Producto creado y publicado en el catalogo");
+      load();
+    });
+  }
+
+  function restockExistingProduct(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setProductNotice(null);
+    setStockNotice(null);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const productId = String(formData.get("productId") ?? "");
+
+    startTransition(async () => {
+      const response = await fetch(`/api/products/${productId}/stock`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quantity: formData.get("quantity"),
+          reason: formData.get("reason") || "Reabastecimiento"
+        })
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setError(payload.error ?? "No se pudo actualizar el stock");
+        return;
+      }
+
+      form.reset();
+      setStockNotice("Stock actualizado");
       load();
     });
   }
@@ -197,7 +258,16 @@ export function AdminDashboard() {
           </label>
           <label>
             Categoria
-            <input name="categoryName" placeholder="Alimentos" required />
+            <select name="categoryName" required defaultValue="">
+              <option value="" disabled>
+                Selecciona tipo
+              </option>
+              {PRODUCT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Precio
@@ -231,6 +301,43 @@ export function AdminDashboard() {
           <button className="primary-button" type="submit" disabled={isPending}>
             <PlusCircle size={18} />
             <span>{isPending ? "Creando..." : "Publicar producto"}</span>
+          </button>
+        </form>
+      </section>
+
+      <section className="analytics-panel stock-manager">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Inventario</p>
+            <h2>Reabastecer producto existente</h2>
+          </div>
+          {stockNotice ? <span className="success-chip">{stockNotice}</span> : null}
+        </div>
+        <form className="product-form restock-form" onSubmit={restockExistingProduct}>
+          <label className="wide-field">
+            Producto
+            <select name="productId" required defaultValue="">
+              <option value="" disabled>
+                Selecciona producto
+              </option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name} - {product.category} - stock {product.stock}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Cantidad
+            <input name="quantity" type="number" min="1" step="1" required />
+          </label>
+          <label className="wide-field">
+            Motivo
+            <input name="reason" placeholder="Compra a proveedor" />
+          </label>
+          <button className="primary-button" type="submit" disabled={isPending}>
+            <RotateCw size={18} />
+            <span>{isPending ? "Actualizando..." : "Subir stock"}</span>
           </button>
         </form>
       </section>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PRODUCT_CATEGORIES } from "@/shared/lib/product-categories";
 
 export const productFiltersSchema = z.object({
   q: z.string().optional(),
@@ -17,13 +18,15 @@ export const createProductSchema = z.object({
   price: z.coerce.number().positive(),
   stock: z.coerce.number().int().min(0),
   minStock: z.coerce.number().int().min(0).default(5),
-  categoryId: z.string().min(1).optional(),
-  categoryName: z.string().trim().min(2).optional(),
+  categoryName: z.enum(PRODUCT_CATEGORIES),
   discountPercentage: z.coerce.number().min(0).max(95).optional()
-}).refine((input) => input.categoryId || input.categoryName, {
-  message: "Debes indicar una categoria",
-  path: ["categoryName"]
+});
+
+export const restockProductSchema = z.object({
+  quantity: z.coerce.number().int().positive(),
+  reason: z.string().trim().min(3).default("Reabastecimiento")
 });
 
 export type ProductFilters = z.infer<typeof productFiltersSchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type RestockProductInput = z.infer<typeof restockProductSchema>;

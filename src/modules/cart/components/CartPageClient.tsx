@@ -90,8 +90,9 @@ export function CartPageClient() {
       <div className="page-panel">
         {verificationCode ? (
           <div className="success-panel">
-            <span>Código de entrega</span>
+            <span>Codigo de entrega para dar al repartidor</span>
             <strong>{verificationCode}</strong>
+            <p>Guardalo: el repartidor lo pedira al momento de entregar el pedido.</p>
           </div>
         ) : null}
         <EmptyState title="Tu carrito está vacío">

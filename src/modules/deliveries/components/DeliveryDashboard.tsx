@@ -105,6 +105,10 @@ export function DeliveryDashboard() {
         <div>
           <p className="eyebrow">Repartidor</p>
           <h1>Pedidos pendientes</h1>
+          <p className="section-note">
+            El codigo lo recibe el cliente cuando confirma el pedido. Al entregar,
+            pides ese codigo y lo escribes aqui para cerrar la venta.
+          </p>
         </div>
       </div>
 
@@ -141,7 +145,7 @@ export function DeliveryDashboard() {
                   <span>En camino</span>
                 </button>
                 <label>
-                  Código
+                  Codigo del cliente
                   <input
                     value={codeByDelivery[delivery.id] ?? ""}
                     onChange={(event) =>
@@ -152,7 +156,9 @@ export function DeliveryDashboard() {
                     }
                     inputMode="numeric"
                     maxLength={6}
+                    placeholder="6 digitos"
                   />
+                  <span>Solo se completa si coincide con el codigo del pedido.</span>
                 </label>
                 <button
                   type="button"

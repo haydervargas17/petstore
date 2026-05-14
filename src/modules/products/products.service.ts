@@ -1,9 +1,13 @@
-import { Prisma, ProductStatus } from "@prisma/client";
+import { InventoryMovementType, Prisma, ProductStatus } from "@prisma/client";
 import { calculateDiscount, toNumber } from "@/shared/lib/money";
 import { prisma } from "@/shared/lib/prisma";
 import { slugify } from "@/shared/lib/slug";
 import type { ProductListItem } from "@/shared/types/domain";
-import type { CreateProductInput, ProductFilters } from "./products.schemas";
+import type {
+  CreateProductInput,
+  ProductFilters,
+  RestockProductInput
+} from "./products.schemas";
 
 const productInclude = {
   category: true,
@@ -116,19 +120,15 @@ export async function listProducts(filters: ProductFilters) {
 export async function createProduct(input: CreateProductInput) {
   const slugBase = slugify(input.name);
   const slug = `${slugBase}-${Date.now().toString(36)}`;
-  const categoryId =
-    input.categoryId ??
-    (
-      await prisma.category.upsert({
-        where: { slug: slugify(input.categoryName ?? "") },
-        update: {},
-        create: {
-          name: input.categoryName ?? "General",
-          slug: slugify(input.categoryName ?? "General"),
-          description: `Categoria ${input.categoryName ?? "General"}`
-        }
-      })
-    ).id;
+  const category = await prisma.category.upsert({
+    where: { slug: slugify(input.categoryName) },
+    update: { name: input.categoryName },
+    create: {
+      name: input.categoryName,
+      slug: slugify(input.categoryName),
+      description: `Categoria ${input.categoryName}`
+    }
+  });
 
   const product = await prisma.product.create({
     data: {
@@ -141,7 +141,7 @@ export async function createProduct(input: CreateProductInput) {
       minStock: input.minStock,
       status:
         input.stock <= 0 ? ProductStatus.OUT_OF_STOCK : ProductStatus.AVAILABLE,
-      categoryId,
+      categoryId: category.id,
       discounts:
         input.discountPercentage && input.discountPercentage > 0
           ? {
@@ -152,6 +152,29 @@ export async function createProduct(input: CreateProductInput) {
               }
             }
           : undefined
+    },
+    include: productInclude
+  });
+
+  return mapProduct(product);
+}
+
+export async function restockProduct(
+  productId: string,
+  input: RestockProductInput
+) {
+  const product = await prisma.product.update({
+    where: { id: productId },
+    data: {
+      stock: { increment: input.quantity },
+      status: ProductStatus.AVAILABLE,
+      inventoryMovements: {
+        create: {
+          type: InventoryMovementType.INCREASE,
+          quantity: input.quantity,
+          reason: input.reason
+        }
+      }
     },
     include: productInclude
   });
